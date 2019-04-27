@@ -1,1 +1,3 @@
-﻿Starter project finished.
+﻿Module: Working with Resource Collections
+
+Chapter: Demo: Creating Child Resources Together with a Parent Resource (Server)
