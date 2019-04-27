@@ -47,9 +47,13 @@ namespace AngularAspCoreBusinessApps
                 if (jsonOutputFormatter != null)
                 {
                     jsonOutputFormatter.SupportedMediaTypes
-                   .Add("application/vnd.marvin.tour+json");
+                    .Add("application/vnd.marvin.tour+json");
                     jsonOutputFormatter.SupportedMediaTypes
-                   .Add("application/vnd.marvin.tourwithestimatedprofits+json");
+                    .Add("application/vnd.marvin.tourwithestimatedprofits+json");
+                    jsonOutputFormatter.SupportedMediaTypes
+                    .Add("application/vnd.marvin.tourwithshows+json");
+                    jsonOutputFormatter.SupportedMediaTypes
+                    .Add("application/vnd.marvin.tourwithestimatedprofitsandshows+json");
                 }
 
                 var jsonInputFormatter = setupAction.InputFormatters
@@ -126,6 +130,17 @@ namespace AngularAspCoreBusinessApps
 
                 config.CreateMap<Dtos.TourForCreation, Entities.Tour>();
                 config.CreateMap<Dtos.TourWithManagerForCreation, Entities.Tour>();
+
+                config.CreateMap<Entities.Tour, Dtos.TourWithShows>()
+                 .ForMember(d => d.Band, o => o.MapFrom(s => s.Band.Name));
+
+                config.CreateMap<Entities.Tour, Dtos.TourWithEstimatedProfitsAndShows>()
+                    .ForMember(d => d.Band, o => o.MapFrom(s => s.Band.Name));
+
+                config.CreateMap<Dtos.TourWithShowsForCreation, Entities.Tour>();
+                config.CreateMap<Dtos.TourWithManagerAndShowsForCreation, Entities.Tour>();
+                config.CreateMap<Dtos.ShowForCreation, Entities.Show>();
+
             });
 
             // Enable CORS
