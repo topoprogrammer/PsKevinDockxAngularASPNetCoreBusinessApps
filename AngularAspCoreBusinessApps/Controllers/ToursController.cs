@@ -34,7 +34,6 @@ namespace AngularAspCoreBusinessApps.Controllers
             return await GetSpecificTour<Tour>(tourId);
         }
 
-
         [HttpGet("{tourId}", Name = "GetTour")]
         [RequestHeaderMatchesMediaType("Accept",
             new[] { "application/vnd.marvin.tour+json" })]
