@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using AngularAspCoreBusinessApps.Dtos;
 using AngularAspCoreBusinessApps.Services;
 using AngularAspCoreBusinessApps.Helpers;
+using Microsoft.AspNetCore.JsonPatch;
 
 namespace AngularAspCoreBusinessApps.Controllers
 {
@@ -47,10 +48,10 @@ namespace AngularAspCoreBusinessApps.Controllers
             new[] { "application/vnd.marvin.tourwithestimatedprofits+json" })]
         public async Task<IActionResult> GetTourWithEstimatedProfits(Guid tourId)
         {
-            return await GetSpecificTour<TourWithEstimatedProfits>(tourId);
+            return   await GetSpecificTour<TourWithEstimatedProfits>(tourId);
         }
 
-       
+
         private async Task<IActionResult> GetSpecificTour<T>(Guid tourId,
                 bool includeShows = false) where T : class
         {
@@ -71,34 +72,30 @@ namespace AngularAspCoreBusinessApps.Controllers
                     "application/vnd.marvin.tourforcreation+json" })]
         public async Task<IActionResult> AddTour([FromBody] TourForCreation tour)
         {
-            if (tour == null)
-            {
-                return BadRequest();
-            }
-
-            // validation of the DTO happens here
-
             return await AddSpecificTour(tour);
         }
 
         [HttpPost]
         [RequestHeaderMatchesMediaType("Content-Type",
-            new[] {"application/vnd.marvin.tourwithmanagerforcreation+json" })]
+            new[] { "application/vnd.marvin.tourwithmanagerforcreation+json" })]
         public async Task<IActionResult> AddTourWithManager(
             [FromBody] TourWithManagerForCreation tour)
+        {
+            return await AddSpecificTour(tour);
+        }
+
+        public async Task<IActionResult> AddSpecificTour<T>(T tour) where T : class
         {
             if (tour == null)
             {
                 return BadRequest();
             }
 
-            // validation of the DTO happens here
+            if (!ModelState.IsValid)
+            {
+                return BadRequest();
+            }
 
-            return await AddSpecificTour(tour);
-        }
-
-        public async Task<IActionResult> AddSpecificTour<T>(T tour) where T : class
-        {
             var tourEntity = Mapper.Map<Entities.Tour>(tour);
 
             if (tourEntity.ManagerId == Guid.Empty)
@@ -142,14 +139,6 @@ namespace AngularAspCoreBusinessApps.Controllers
         public async Task<IActionResult> AddTourWithShows(
            [FromBody] TourWithShowsForCreation tour)
         {
-            if (tour == null)
-            {
-                return BadRequest();
-            }
-
-            // validation of the DTO happens here
-
-            // the rest is the same as for other actions. 
             return await AddSpecificTour(tour);
         }
 
@@ -159,15 +148,50 @@ namespace AngularAspCoreBusinessApps.Controllers
         public async Task<IActionResult> AddTourWithManagerAndShows(
             [FromBody] TourWithManagerAndShowsForCreation tour)
         {
-            if (tour == null)
+            return await AddSpecificTour(tour);
+        }
+
+        [HttpPatch("{tourId}")]
+        public async Task<IActionResult> PartiallyUpdateTour(Guid tourId,
+            [FromBody] JsonPatchDocument<TourForUpdate> jsonPatchDocument)
+        {
+            if (jsonPatchDocument == null)
             {
                 return BadRequest();
             }
 
-            // validation of the DTO happens here
+            var tourFromRepo = await _tourManagementRepository.GetTour(tourId);
 
-            // the rest is the same as for other actions. 
-            return await AddSpecificTour(tour);
+            if (tourFromRepo == null)
+            {
+                return BadRequest();
+            }
+
+            var tourToPatch = Mapper.Map<TourForUpdate>(tourFromRepo);
+
+            //To validate is patch request is well form
+            jsonPatchDocument.ApplyTo(tourToPatch, ModelState);
+            if (!ModelState.IsValid)
+            {
+                return BadRequest();
+            }
+
+            //Validate DTO
+            if (!TryValidateModel(tourToPatch))
+            {
+                return BadRequest();
+            }
+
+            Mapper.Map(tourToPatch, tourFromRepo);
+
+            await _tourManagementRepository.UpdateTour(tourFromRepo);
+
+            if (!await _tourManagementRepository.SaveAsync())
+            {
+                throw new Exception("Updating a tour failed on save.");
+            }
+
+            return NoContent();
         }
     }
 }

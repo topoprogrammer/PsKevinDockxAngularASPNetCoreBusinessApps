@@ -54,6 +54,8 @@ namespace AngularAspCoreBusinessApps
                     .Add("application/vnd.marvin.tourwithshows+json");
                     jsonOutputFormatter.SupportedMediaTypes
                     .Add("application/vnd.marvin.tourwithestimatedprofitsandshows+json");
+                    jsonOutputFormatter.SupportedMediaTypes
+                    .Add("application/vnd.marvin.showcollection+json");
                 }
 
                 var jsonInputFormatter = setupAction.InputFormatters
@@ -61,9 +63,17 @@ namespace AngularAspCoreBusinessApps
                 if (jsonInputFormatter != null)
                 {
                     jsonInputFormatter.SupportedMediaTypes
-                   .Add("application/vnd.marvin.tourforcreation+json");
+                    .Add("application/vnd.marvin.tourforcreation+json");
                     jsonInputFormatter.SupportedMediaTypes
-                   .Add("application/vnd.marvin.tourwithmanagerforcreation+json");
+                    .Add("application/vnd.marvin.tourwithmanagerforcreation+json");
+                    jsonInputFormatter.SupportedMediaTypes
+                    .Add("application/vnd.marvin.tourwithshowsforcreation+json");
+                    jsonInputFormatter.SupportedMediaTypes
+                    .Add("application/vnd.marvin.tourwithmanagerandshowsforcreation+json");
+                    jsonInputFormatter.SupportedMediaTypes
+                    .Add("application/vnd.marvin.showcollectionforcreation+json");
+                    jsonInputFormatter.SupportedMediaTypes
+                    .Add("application/json-patch+json");
                 }
             })
             .AddJsonOptions(options =>
