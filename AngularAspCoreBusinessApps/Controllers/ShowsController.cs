@@ -5,10 +5,12 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using AngularAspCoreBusinessApps.Dtos;
 using AngularAspCoreBusinessApps.Services;
+using Microsoft.AspNetCore.Authorization;
 
 namespace AngularAspCoreBusinessApps.Controllers
 {
     [Route("api/tours/{tourId}/shows")]
+    [Authorize]
     public class ShowsController : Controller
     {
         private readonly ITourManagementRepository _tourManagementRepository;

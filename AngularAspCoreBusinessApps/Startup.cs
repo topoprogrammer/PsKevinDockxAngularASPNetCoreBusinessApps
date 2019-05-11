@@ -14,6 +14,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
+using IdentityServer4.AccessTokenValidation;
 
 namespace AngularAspCoreBusinessApps
 {
@@ -107,6 +108,14 @@ namespace AngularAspCoreBusinessApps
 
             // register the user info service
             services.AddScoped<IUserInfoService, UserInfoService>();
+
+            services.AddAuthentication(IdentityServerAuthenticationDefaults.AuthenticationScheme)
+               .AddIdentityServerAuthentication(options =>
+               {
+                   options.Authority = "https://localhost:44371";
+                   options.ApiName = "tourmanagementapi";
+               });
+
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -155,6 +164,9 @@ namespace AngularAspCoreBusinessApps
 
             // Enable CORS
             app.UseCors("AllowAllOriginsHeadersAndMethods");
+
+            app.UseAuthentication();
+
             app.UseMvc();
         }
     }

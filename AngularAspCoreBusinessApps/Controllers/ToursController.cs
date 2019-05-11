@@ -7,10 +7,12 @@ using AngularAspCoreBusinessApps.Dtos;
 using AngularAspCoreBusinessApps.Services;
 using AngularAspCoreBusinessApps.Helpers;
 using Microsoft.AspNetCore.JsonPatch;
+using Microsoft.AspNetCore.Authorization;
 
 namespace AngularAspCoreBusinessApps.Controllers
 {
     [Route("api/tours")]
+    [Authorize]
     public class ToursController : Controller
     {
         private readonly ITourManagementRepository _tourManagementRepository;
@@ -93,7 +95,7 @@ namespace AngularAspCoreBusinessApps.Controllers
 
             if (!ModelState.IsValid)
             {
-                return BadRequest();
+                return new Helpers.UnprocessableEntityObjectResult(ModelState);
             }
 
             var tourEntity = Mapper.Map<Entities.Tour>(tour);
@@ -179,7 +181,7 @@ namespace AngularAspCoreBusinessApps.Controllers
             //Validate DTO
             if (!TryValidateModel(tourToPatch))
             {
-                return BadRequest();
+                return new Helpers.UnprocessableEntityObjectResult(ModelState);
             }
 
             Mapper.Map(tourToPatch, tourFromRepo);
