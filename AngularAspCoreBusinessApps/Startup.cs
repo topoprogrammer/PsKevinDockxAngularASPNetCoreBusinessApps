@@ -15,6 +15,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using IdentityServer4.AccessTokenValidation;
+using AngularAspCoreBusinessApps.Authorization;
+using Microsoft.AspNetCore.Authorization;
 
 namespace AngularAspCoreBusinessApps
 {
@@ -30,13 +32,25 @@ namespace AngularAspCoreBusinessApps
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.Configure<CookiePolicyOptions>(options =>
+            services.AddAuthorization(options =>
             {
-                // This lambda determines whether user consent for non-essential cookies is needed for a given request.
-                options.CheckConsentNeeded = context => true;
-                options.MinimumSameSitePolicy = SameSiteMode.None;
+                options.AddPolicy("UserMustBeAdministrator", policyBuilder =>
+                {
+                    policyBuilder.RequireAuthenticatedUser();
+                    policyBuilder.RequireRole("Administrator");
+                });
+
+                options.AddPolicy(
+                   "UserMustBeTourManager",
+                   policyBuilder =>
+                   {
+                       policyBuilder.RequireAuthenticatedUser();
+                       policyBuilder.AddRequirements(
+                         new UserMustBeTourManagerRequirement("Administrator"));
+                   });
             });
 
+            services.AddScoped<IAuthorizationHandler, UserMustBeTourManagerRequirementHandler>();
 
             services.AddMvc(setupAction =>
             {

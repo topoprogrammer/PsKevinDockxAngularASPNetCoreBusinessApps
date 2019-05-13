@@ -16,16 +16,32 @@ namespace AngularAspCoreBusinessApps.Controllers
     public class ToursController : Controller
     {
         private readonly ITourManagementRepository _tourManagementRepository;
+        private readonly IUserInfoService _userInfoService;
 
-        public ToursController(ITourManagementRepository tourManagementRepository)
+        public ToursController(ITourManagementRepository tourManagementRepository, IUserInfoService userInfoService)
         {
             _tourManagementRepository = tourManagementRepository;
+            _userInfoService = userInfoService;
         }
 
         [HttpGet]
         public async Task<IActionResult> GetTours()
         {
-            var toursFromRepo = await _tourManagementRepository.GetTours();
+            IEnumerable<Entities.Tour> toursFromRepo = new List<Entities.Tour>();
+
+            if (_userInfoService.Role == "Administrator")
+            {
+                toursFromRepo = await _tourManagementRepository.GetTours();
+            }
+            else
+            {
+                if (!Guid.TryParse(_userInfoService.UserId, out Guid userIdAsGuid))
+                {
+                    return Forbid();
+                }
+
+                toursFromRepo = await _tourManagementRepository.GetToursForManager(userIdAsGuid);
+            }
 
             var tours = Mapper.Map<IEnumerable<Tour>>(toursFromRepo);
             return Ok(tours);
@@ -38,6 +54,7 @@ namespace AngularAspCoreBusinessApps.Controllers
         }
 
         [HttpGet("{tourId}", Name = "GetTour")]
+        [Authorize(Policy = "UserMustBeTourManager")]
         [RequestHeaderMatchesMediaType("Accept",
             new[] { "application/vnd.marvin.tour+json" })]
         public async Task<IActionResult> GetTour(Guid tourId)
@@ -46,13 +63,33 @@ namespace AngularAspCoreBusinessApps.Controllers
         }
 
         [HttpGet("{tourId}")]
+        [Authorize(Policy = "UserMustBeTourManager")]
+        [Authorize(Policy = "UserMustBeAdministrator")]
         [RequestHeaderMatchesMediaType("Accept",
             new[] { "application/vnd.marvin.tourwithestimatedprofits+json" })]
         public async Task<IActionResult> GetTourWithEstimatedProfits(Guid tourId)
         {
-            return   await GetSpecificTour<TourWithEstimatedProfits>(tourId);
+            return await GetSpecificTour<TourWithEstimatedProfits>(tourId);
         }
 
+        [HttpGet("{tourId}")]
+        [Authorize(Policy = "UserMustBeTourManager")]
+        [RequestHeaderMatchesMediaType("Accept",
+        new[] { "application/vnd.marvin.tourwithshows+json" })]
+        public async Task<IActionResult> GetTourWithShows(Guid tourId)
+        {
+            return await GetSpecificTour<TourWithShows>(tourId, true);
+        }
+
+        [HttpGet("{tourId}")]
+        [Authorize(Policy = "UserMustBeTourManager")]
+        [Authorize(Policy = "UserMustBeAdministrator")]
+        [RequestHeaderMatchesMediaType("Accept",
+           new[] { "application/vnd.marvin.tourwithestimatedprofitsandshows+json" })]
+        public async Task<IActionResult> GetTourWithEstimatedProfitsAndShows(Guid tourId)
+        {
+            return await GetSpecificTour<TourWithEstimatedProfitsAndShows>(tourId, true);
+        }
 
         private async Task<IActionResult> GetSpecificTour<T>(Guid tourId,
                 bool includeShows = false) where T : class
@@ -78,10 +115,30 @@ namespace AngularAspCoreBusinessApps.Controllers
         }
 
         [HttpPost]
+        [Authorize(Policy = "UserMustBeAdministrator")]
         [RequestHeaderMatchesMediaType("Content-Type",
             new[] { "application/vnd.marvin.tourwithmanagerforcreation+json" })]
         public async Task<IActionResult> AddTourWithManager(
             [FromBody] TourWithManagerForCreation tour)
+        {
+            return await AddSpecificTour(tour);
+        }
+
+        [HttpPost]
+        [RequestHeaderMatchesMediaType("Content-Type",
+           new[] { "application/vnd.marvin.tourwithshowsforcreation+json" })]
+        public async Task<IActionResult> AddTourWithShows(
+           [FromBody] TourWithShowsForCreation tour)
+        {
+            return await AddSpecificTour(tour);
+        }
+
+        [HttpPost]
+        [RequestHeaderMatchesMediaType("Content-Type",
+            new[] { "application/vnd.marvin.tourwithmanagerandshowsforcreation+json" })]
+        [Authorize(Policy = "UserMustBeAdministrator")]
+        public async Task<IActionResult> AddTourWithManagerAndShows(
+            [FromBody] TourWithManagerAndShowsForCreation tour)
         {
             return await AddSpecificTour(tour);
         }
@@ -102,7 +159,12 @@ namespace AngularAspCoreBusinessApps.Controllers
 
             if (tourEntity.ManagerId == Guid.Empty)
             {
-                tourEntity.ManagerId = new Guid("fec0a4d6-5830-4eb8-8024-272bd5d6d2bb");
+                if (!Guid.TryParse(_userInfoService.UserId, out Guid userIdAsGuid))
+                {
+                    return Forbid();
+                }
+
+                tourEntity.ManagerId = userIdAsGuid;
             }
 
             await _tourManagementRepository.AddTour(tourEntity);
@@ -119,39 +181,6 @@ namespace AngularAspCoreBusinessApps.Controllers
                 tourToReturn);
         }
 
-        [HttpGet("{tourId}")]
-        [RequestHeaderMatchesMediaType("Accept",
-          new[] { "application/vnd.marvin.tourwithshows+json" })]
-        public async Task<IActionResult> GetTourWithShows(Guid tourId)
-        {
-            return await GetSpecificTour<TourWithShows>(tourId, true);
-        }
-
-        [HttpGet("{tourId}")]
-        [RequestHeaderMatchesMediaType("Accept",
-           new[] { "application/vnd.marvin.tourwithestimatedprofitsandshows+json" })]
-        public async Task<IActionResult> GetTourWithEstimatedProfitsAndShows(Guid tourId)
-        {
-            return await GetSpecificTour<TourWithEstimatedProfitsAndShows>(tourId, true);
-        }
-
-        [HttpPost]
-        [RequestHeaderMatchesMediaType("Content-Type",
-           new[] { "application/vnd.marvin.tourwithshowsforcreation+json" })]
-        public async Task<IActionResult> AddTourWithShows(
-           [FromBody] TourWithShowsForCreation tour)
-        {
-            return await AddSpecificTour(tour);
-        }
-
-        [HttpPost]
-        [RequestHeaderMatchesMediaType("Content-Type",
-            new[] { "application/vnd.marvin.tourwithmanagerandshowsforcreation+json" })]
-        public async Task<IActionResult> AddTourWithManagerAndShows(
-            [FromBody] TourWithManagerAndShowsForCreation tour)
-        {
-            return await AddSpecificTour(tour);
-        }
 
         [HttpPatch("{tourId}")]
         public async Task<IActionResult> PartiallyUpdateTour(Guid tourId,
